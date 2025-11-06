@@ -19,7 +19,19 @@ let previousFrameData = null; // 前フレームの輝度フィルタリング�
 
 // --- カメラのセットアップ ---
 async function setupCamera() {
+    // 変更後（外カメラを指定）
+    const constraints = {
+        video: { 
+            width: WIDTH, 
+            height: HEIGHT,
+            // ここがポイント！外カメラ（背面カメラ）を要求
+            facingMode: 'environment' 
+        }
+    };
+
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     try {
+        
         // スマホカメラへのアクセスを要求
         const stream = await navigator.mediaDevices.getUserMedia({ video: { width: WIDTH, height: HEIGHT } });
         video.srcObject = stream;
