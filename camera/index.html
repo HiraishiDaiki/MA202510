@@ -1,6 +1,19 @@
-<video id="video" autoplay style="display: none;"></video>
-<canvas id="canvas-original" width="640" height="480"></canvas>
-<canvas id="canvas-diff" width="640" height="480"></canvas>
-<div id="status">追跡情報: 動きが検出されていません</div>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timpani tuning support system</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="apple-touch-icon" href="../img/icon/apple-touch-icon-180x180.png" sizes="180x180">
+    <link rel="icon" type="image/png" href="../img/icon/android-chrome-192x192.png" sizes="192x192">
+</head>
+
+<body>
+  <video id="video" autoplay style="display: none;"></video>
+  <canvas id="canvas-original" width="640" height="480"></canvas>
+  <canvas id="canvas-diff" width="640" height="480"></canvas>
+  <div id="status">追跡情報: 動きが検出されていません</div>
+</body>
 
 <script src="script.js"></script>
