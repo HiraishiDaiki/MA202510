@@ -17,23 +17,20 @@ const HEIGHT = canvasOriginal.height;
 // --- 追跡に必要な変数 ---
 let previousFrameData = null; // 前フレームの輝度フィルタリング後のピクセルデータを保持
 
-// --- カメラのセットアップ ---
+// --- カメラのセットアップ (修正版) ---
 async function setupCamera() {
-    // 変更後（外カメラを指定）
     const constraints = {
         video: { 
             width: WIDTH, 
             height: HEIGHT,
-            // ここがポイント！外カメラ（背面カメラ）を要求
-            facingMode: 'environment' 
+            // 外カメラを指定！
+            facingMode: { exact: 'environment' } 
         }
     };
 
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     try {
-        
-        // スマホカメラへのアクセスを要求
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: WIDTH, height: HEIGHT } });
+        // 外カメラへのアクセスを要求
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
         video.play();
         video.onloadedmetadata = () => {
@@ -41,8 +38,9 @@ async function setupCamera() {
             setInterval(processFrame, 1000 / 30); // 30 FPSでフレームを処理
         };
     } catch (err) {
-        console.error("カメラへのアクセスに失敗しました:", err);
-        statusDiv.textContent = 'エラー: カメラへのアクセスを許可してください。';
+        // 外カメラがない、またはアクセスが拒否された場合
+        console.error("外カメラへのアクセスに失敗しました:", err);
+        statusDiv.textContent = 'エラー: 外カメラへのアクセスを許可するか、デバイスが外カメラに対応していません。';
     }
 }
 
