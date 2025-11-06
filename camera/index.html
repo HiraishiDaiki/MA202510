@@ -10,10 +10,20 @@
 </head>
 
 <body>
-  <video id="video" autoplay style="display: none;"></video>
-  <canvas id="canvas-original" width="640" height="480"></canvas>
-  <canvas id="canvas-diff" width="640" height="480"></canvas>
-  <div id="status">追跡情報: 動きが検出されていません</div>
+    <header>
+        <button id="menuButton" class="menu-button">☰</button>
+    </header>
+
+    <nav id="slideInMenu" class="slide-in-menu">
+        <ul>
+            <li><a href="../decay/index.html">減衰曲線表示へ</a></li>
+            <li><a href="../index.html">Topへ</a></li>
+        </ul>
+    </nav>
+    <video id="video" autoplay style="display: none;"></video>
+    <canvas id="canvas-original" width="640" height="480"></canvas>
+    <canvas id="canvas-diff" width="640" height="480"></canvas>
+    <div id="status">追跡情報: 動きが検出されていません</div>
 </body>
 
 <script src="script.js"></script>
