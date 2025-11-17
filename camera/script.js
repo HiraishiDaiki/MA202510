@@ -2,9 +2,9 @@
 const WIDTH = 640;
 const HEIGHT = 480;
 const FPS = 30; 
-const BRIGHTNESS_THRESHOLD = 200; 
-const DIFF_THRESHOLD = 20;        
-const MIN_MOVEMENT_PIXELS = 100;  
+const BRIGHTNESS_THRESHOLD = 200; // 輝度のしきい値
+const DIFF_THRESHOLD = 20;        // 差分のしきい値
+const MIN_MOVEMENT_PIXELS = 100;  // 光の塊のしきい値
 
 // --- HTML要素の取得とコンテキスト ---
 const video = document.getElementById('video');
@@ -25,7 +25,7 @@ let previousFrameData = null;
 let intervalId = null; 
 
 // -------------------------------------------------------------------
-// 🎥 ステップ1: カメラのセットアップ（外カメラ優先とエラー処理強化）
+// カメラのセットアップ
 // -------------------------------------------------------------------
 async function setupCamera() {
     // 追跡処理が既に実行中の場合は停止し、リセット
@@ -35,7 +35,7 @@ async function setupCamera() {
     }
     previousFrameData = null; // 前フレームデータもリセット
 
-    // 1. 外カメラ指定の制約 (idealを使用し、柔軟性を確保)
+    // 1. 外カメラ指定の制約
     let constraints = {
         video: { 
             // 解像度は ideal で指定し、外カメラがサポートする範囲に合わせる
@@ -60,7 +60,7 @@ async function setupCamera() {
         
     } catch (err) {
         console.error("外カメラ (ideal) での起動に失敗しました。詳細:", err);
-        statusDiv.textContent = 'エラー: 外カメラ起動失敗。内カメラを試みます...';
+        statusDiv.textContent = 'エラー: 外カメラ起動失敗。内カメラを試みます';
         
         // 2. 外カメラが利用できない/エラーの場合、内カメラでのフォールバックを試みる
         try {
@@ -75,14 +75,14 @@ async function setupCamera() {
             };
         } catch (fallbackErr) {
              console.error("内カメラでの起動にも失敗しました:", fallbackErr);
-             statusDiv.textContent = '致命的なエラー: カメラへのアクセス権限がないか、デバイスがサポートしていません。';
+             statusDiv.textContent = 'カメラへのアクセス権限がないか、デバイスがサポートしていません。';
         }
     }
 }
 
 
 // -------------------------------------------------------------------
-// ✨ ステップ2: メインの追跡処理関数 (既存ロジックを維持)
+// メインの追跡処理関数
 // -------------------------------------------------------------------
 function processFrame() {
     if (video.paused || video.ended) return;
@@ -97,11 +97,15 @@ function processFrame() {
     const currentBrightFrame = new Uint8Array(WIDTH * HEIGHT);
     
     for (let i = 0; i < dataOriginal.length; i += 4) {
+        // RGB成分の取得  
         const r = dataOriginal[i];
         const g = dataOriginal[i + 1];
         const b = dataOriginal[i + 2];
+
+        // 輝度の計算 
         const brightness = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        
+
+        // 輝度がしきい値を超えていたら白にする
         if (brightness > BRIGHTNESS_THRESHOLD) {
             currentBrightFrame[i / 4] = 255;
         } else {
@@ -120,6 +124,7 @@ function processFrame() {
 
         for (let i = 0; i < currentBrightFrame.length; i++) {
             const index4 = i * 4;
+            // 差分の計算  
             const diff = Math.abs(currentBrightFrame[i] - previousFrameData[i]);
 
             if (diff > DIFF_THRESHOLD && currentBrightFrame[i] === 255) {
