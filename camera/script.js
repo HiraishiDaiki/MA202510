@@ -149,7 +149,7 @@ function processFrame() {
             const centerX = Math.round(totalX / diffPixelsCount);
             const centerY = Math.round(totalY / diffPixelsCount);
             
-            statusDiv.textContent = `追跡中: 中心座標 (${centerX}, ${centerY})`;
+            statusDiv.textContent = `動作検出中`;
 
             // 重心を視覚的に表示 (赤い丸)
             ctxOriginal.fillStyle = 'red';
@@ -168,6 +168,6 @@ function processFrame() {
 }
 
 // -------------------------------------------------------------------
-// 🚀 処理開始
+// 処理開始
 // -------------------------------------------------------------------
 setupCamera();
