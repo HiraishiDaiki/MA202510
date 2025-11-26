@@ -113,7 +113,7 @@ async function toggleLight(){
     
   } catch(err){
     console.log('ライトの切り替えに失敗しました：'err);
-    statusDiv.textContent = 'エラー：ライト操作に失敗しました'
+    statusDiv.textContent = 'エラー：ライト操作に失敗しました';
     isLightOn = !isLightOn
   }
 }
