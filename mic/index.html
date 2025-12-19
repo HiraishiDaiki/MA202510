@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realtime Timpani Visualizer</title>
+    <link rel="stylesheet" href="style_mic.css">
+</head>
+<body>
+<header>
+        <button id="menuButton" class="menu-button">☰</button>
+    </header>
+
+    <nav id="slideInMenu" class="slide-in-menu">
+        <ul>
+            <li><a href="../index.html">Topへ</a></li>
+            <li><a href="../balance/index.html">バランス表示へ</a></li>
+            <li><a href="../decay/index.html">減衰曲線表示へ</a></li>
+        </ul>
+    </nav>
+
+
+<div class="container">
+    
+    
+    <div class="controls">
+        <button id="startBtn">マイク入力を開始</button>
+        <div id="status">開始ボタンを押してください</div>
+    </div>
+
+    <div class="monitor-panel">
+        <canvas id="canvas" width="600" height="600"></canvas>
+    </div>
+
+    <div class="settings-panel">
+        <div class="control-group">
+            <label>中心周波数 (Frequency): <span id="freqVal">135</span> Hz</label>
+            <input type="range" id="freqSlider" min="20" max="250" value="135" step="1">
+        </div>
+
+        <div class="control-group">
+            <label>バンド幅 (Bandwidth): <span id="bwVal">20</span> Hz</label>
+            <input type="range" id="bwSlider" min="0" max="50" value="10" step="10">
+        </div>
+
+        <div class="control-group">
+            <label>表示ゲイン (Zoom): <span id="gainVal">5.0</span></label>
+            <input type="range" id="gainSlider" min="1.0" max="50.0" value="5.0" step="0.5">
+        </div>
+    </div>
+</div>
+
+<script src="script_mic.js"></script>
+<!--メニュー-->
+<script src="../js/menu.js"></script>
+
+</body>
+</html>
