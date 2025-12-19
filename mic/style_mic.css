@@ -1,0 +1,193 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #ffffff; /* 暗めの背景で波形を見やすく */
+    color: #eee;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: #f4f4f4;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+h2 {
+    text-align: center;
+    margin-top: 0;
+    font-weight: 300;
+}
+
+canvas {
+    background: #f4f4f4;
+    border: 1px solid #555;
+    display: block;
+    margin: 0 auto;
+    border-radius: 4px;
+}
+
+.controls {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+button {
+    padding: 12px 30px;
+    font-size: 18px;
+    cursor: pointer;
+    background: #00bcd4;
+    color: black;
+    border: none;
+    border-radius: 25px;
+    transition: background 0.2s;
+    font-weight: bold;
+}
+
+button:hover {
+    background: #00acc1;
+}
+
+button:disabled {
+    background: #555;
+    cursor: not-allowed;
+}
+
+#status {
+    margin-top: 10px;
+    font-size: 0.9em;
+    color: #aaa;
+}
+
+/* 設定パネル */
+.settings-panel {
+    background: #444;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+.control-group {
+    margin: 10px;
+    width: 200px;
+    text-align: center;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    color: #ccc;
+}
+
+span {
+    color: #00bcd4;
+    font-weight: bold;
+}
+
+input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+}
+
+/* ここからスライドインメニューのスタイル */
+header {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 100; /* 他の要素より前面に表示 */
+    padding: 10px;
+}
+
+.menu-button {
+    font-size: 1.5em;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+}
+
+.slide-in-menu {
+    position: fixed;
+    top: 0;
+    right: -250px; /* 初期状態では画面外に配置 */
+    width: 250px;
+    height: 100%;
+    background-color: #f0f0f0;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    transition: right 0.3s ease-in-out; /* スライドインのアニメーション */
+    z-index: 99; /* メニューボタンより背面に配置 */
+    padding-top: 60px; /* ヘッダー分のスペース */
+}
+
+.slide-in-menu.open {
+    right: 0; /* openクラスが付与されると画面内に移動 */
+}
+
+.slide-in-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.slide-in-menu li {
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+.slide-in-menu li a {
+    text-decoration: none;
+    color: #333;
+    display: block; /* リンクエリアを広げる */
+}
+/* スライドインメニューのスタイルここまで */
+
+@media screen and (max-width:480px){
+    /*画面サイズが480px以下の場合個々の記述が適用される*/
+    h1 {
+        font-size: 24px;
+    }
+
+    .container canvas, details{
+        width: 100%;
+    }
+
+    #CircleCanvas{
+        width: 80%;
+    }
+
+    .field{
+        width: 100%;
+    }
+
+    .field button{
+        width: 10%;
+        margin: 10px 0px;
+    }
+
+    /* 480px以下でのメニューの調整 */
+    .slide-in-menu {
+        width: 70%; /* 画面幅の70%にするなど調整 */
+        right: -70%;
+    }
+
+    body.menu-open {
+        margin-right: 70%;
+    }
+
+    .container.menu-open {
+        transform: translateX(-70%);
+    }
+
+    h1.menu-open {
+        margin-right: 70%;
+    }
+
+    .field.menu-open {
+        margin-right: 70%;
+    }
+}
