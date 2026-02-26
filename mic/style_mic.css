@@ -1,7 +1,7 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #ffffff; /* 暗めの背景で波形を見やすく */
-    color: #eee;
+    background: #ffffff; 
+    color: #444;
     padding: 20px;
 }
 
@@ -28,9 +28,30 @@ canvas {
     border-radius: 4px;
 }
 
+/*ボタン*/
+button {
+    margin: 5px 20px;
+}
+
+.saveBtn{
+    display: flex;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .controls {
     text-align: center;
     margin-bottom: 20px;
+}
+
+/* デバイス選択周りのスタイル */
+.device-select-group {
+    margin-bottom: 15px;
+}
+.device-select-group label {
+    display: inline-block;
+    margin-right: 10px;
+    color: #444;
 }
 
 button {
@@ -57,12 +78,12 @@ button:disabled {
 #status {
     margin-top: 10px;
     font-size: 0.9em;
-    color: #aaa;
+    color: #444;
 }
 
 /* 設定パネル */
 .settings-panel {
-    background: #444;
+    background: #f4f4f4;
     padding: 15px;
     border-radius: 8px;
     margin-top: 20px;
@@ -81,7 +102,7 @@ label {
     display: block;
     margin-bottom: 5px;
     font-size: 0.9em;
-    color: #ccc;
+    color: #444;
 }
 
 span {
