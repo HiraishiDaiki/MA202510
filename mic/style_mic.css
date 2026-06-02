@@ -1,62 +1,85 @@
+/* ==========================================
+   全体の基本設定
+   ========================================== */
+
+*, *::before, *::after {
+    box-sizing: border-box; 
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #ffffff; 
-    color: #444;
-    padding: 20px;
+    background: #e9ecef; 
+    color: #333;
+    margin: 0;
+    padding: 10px; /* スマホ向けに外側の余白を少し狭く */
 }
 
-.container {
-    max-width: 800px;
+/* 2カラムレイアウトの大枠 */
+.wrapper {
+    display: flex;
+    flex-wrap: wrap; /* 画面が狭い時は自動で縦並びに */
+    justify-content: center;
+    gap: 20px; 
+    width: 100%; /* 画面幅をはみ出さない */
+    max-width: 1400px; 
     margin: 0 auto;
-    background: #f4f4f4;
+    background: #ffffff;
     padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* ================== 左パネル ================== */
+.left-panel {
+    flex: 1 1 600px; /* 基本は600pxだが、画面が狭ければ縮むことを許可 */
+    max-width: 600px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    position: sticky;
+    top: 20px;
+    align-self: flex-start; 
+
+    height: calc(100vh - 40px);
+    justify-content: center;
+}
+
+/* ================== 右パネル ================== */
+.right-panel {
+    flex: 1 1 400px;
+    min-width: 0; /* ★重要：画面が狭い時に400px以下にも縮めるようにする */
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px; 
+}
+
+/* 右パネル内の各ブロック */
+.box {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    padding: 15px;
     border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    width: 100%;
 }
 
-h2 {
-    text-align: center;
-    margin-top: 0;
-    font-weight: 300;
-}
-
+/* ================== キャンバス・UI要素 ================== */
 canvas {
-    background: #f4f4f4;
+    background: #ffffff;
     border: 1px solid #555;
+    border-radius: 4px;
     display: block;
     margin: 0 auto;
-    border-radius: 4px;
-}
-
-/*ボタン*/
-button {
-    margin: 5px 20px;
-}
-
-.saveBtn{
-    display: flex;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.controls {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-/* デバイス選択周りのスタイル */
-.device-select-group {
-    margin-bottom: 15px;
-}
-.device-select-group label {
-    display: inline-block;
-    margin-right: 10px;
-    color: #444;
+    width: 100%; /* ★親要素の幅にピタリと合わせる */
+    height: auto; /* ★横幅が縮んだら、縦横比を保ったまま高さも自動で縮める */
 }
 
 button {
-    padding: 12px 30px;
-    font-size: 18px;
+    margin-top: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
     cursor: pointer;
     background: #00bcd4;
     color: black;
@@ -70,39 +93,31 @@ button:hover {
     background: #00acc1;
 }
 
-button:disabled {
-    background: #555;
-    cursor: not-allowed;
+.saveBtn {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+
+.controls {
+    text-align: center;
+}
+
+.device-select-group {
+    margin-bottom: 15px;
 }
 
 #status {
     margin-top: 10px;
     font-size: 0.9em;
-    color: #444;
-}
-
-/* 設定パネル */
-.settings-panel {
-    background: #f4f4f4;
-    padding: 15px;
-    border-radius: 8px;
-    margin-top: 20px;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-around;
-}
-
-.control-group {
-    margin: 10px;
-    width: 200px;
-    text-align: center;
+    color: #666;
 }
 
 label {
     display: block;
     margin-bottom: 5px;
     font-size: 0.9em;
-    color: #444;
+    font-weight: bold;
 }
 
 span {
@@ -115,12 +130,37 @@ input[type="range"] {
     cursor: pointer;
 }
 
-/* ここからスライドインメニューのスタイル */
+/* 設定パネル (横並び) */
+.settings-panel {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap; /* 画面が狭い時は入力欄も折り返す */
+    gap: 10px;
+}
+
+.control-group {
+    text-align: center;
+    flex: 1 1 100px; /* 最小100pxで均等割り */
+}
+
+.control-group input {
+    width: 80%;
+    padding: 5px;
+    text-align: center;
+}
+
+details summary {
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+/* ================== スライドインメニュー ================== */
 header {
     position: fixed;
     top: 0;
     right: 0;
-    z-index: 100; /* 他の要素より前面に表示 */
+    z-index: 100;
     padding: 10px;
 }
 
@@ -135,18 +175,18 @@ header {
 .slide-in-menu {
     position: fixed;
     top: 0;
-    right: -250px; /* 初期状態では画面外に配置 */
+    right: -250px;
     width: 250px;
     height: 100%;
     background-color: #f0f0f0;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-    transition: right 0.3s ease-in-out; /* スライドインのアニメーション */
-    z-index: 99; /* メニューボタンより背面に配置 */
-    padding-top: 60px; /* ヘッダー分のスペース */
+    transition: right 0.3s ease-in-out;
+    z-index: 99;
+    padding-top: 60px;
 }
 
 .slide-in-menu.open {
-    right: 0; /* openクラスが付与されると画面内に移動 */
+    right: 0;
 }
 
 .slide-in-menu ul {
@@ -163,52 +203,76 @@ header {
 .slide-in-menu li a {
     text-decoration: none;
     color: #333;
-    display: block; /* リンクエリアを広げる */
+    display: block;
 }
-/* スライドインメニューのスタイルここまで */
 
-@media screen and (max-width:480px){
-    /*画面サイズが480px以下の場合個々の記述が適用される*/
-    h1 {
-        font-size: 24px;
+/* ================== レスポンシブ対応 ================== */
+
+/* 1. タブレット等（縦画面・1100px以下）：縦一列にする */
+@media screen and (max-width: 1100px) and (orientation: portrait) {
+    .wrapper {
+        flex-direction: column;
+        align-items: center;
+        padding: 15px;
     }
-
-    .container canvas, details{
+    
+    .left-panel, .right-panel {
         width: 100%;
+        max-width: 100%; 
     }
 
-    #CircleCanvas{
-        width: 80%;
+    #canvas {
+        max-width: 80vw; /* 縦画面の時は横幅の80%までに制限 */
+    }
+}
+
+/* 2. スマホ等「横画面（ランドスケープ）」専用の調整 */
+@media screen and (max-width: 950px) and (orientation: landscape) {
+    .wrapper {
+        flex-direction: row; /* 横並びに戻す */
+        align-items: flex-start;
+        padding: 10px;
+        gap: 15px;
     }
 
-    .field{
+    .left-panel {
+        flex: 0 0 45%; /* 画面の左45%をリサージュに */
+        max-width: 350px; 
+
+        top: 10px;
+    }
+
+    .right-panel {
+        flex: 1; /* 残りの右側すべてをコントロールに */
+    }
+
+    #canvas {
         width: 100%;
+        max-height: 75vh; /* ★重要: 画面の高さの75%までに抑えて縦のはみ出しを防ぐ */
+        object-fit: contain; /* 縦横比を崩さずに枠内に収める */
     }
 
-    .field button{
-        width: 10%;
-        margin: 10px 0px;
+    /* 右側のパネルの隙間を少し詰めて、スクロール量を減らす */
+    .box {
+        padding: 10px;
+    }
+    
+    .right-panel {
+        gap: 10px;
     }
 
-    /* 480px以下でのメニューの調整 */
-    .slide-in-menu {
-        width: 70%; /* 画面幅の70%にするなど調整 */
-        right: -70%;
+    /* 設定パネルを縦一列に詰める */
+    .settings-panel {
+        flex-direction: column;
+        gap: 5px;
     }
-
-    body.menu-open {
-        margin-right: 70%;
+    .control-group {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
-
-    .container.menu-open {
-        transform: translateX(-70%);
-    }
-
-    h1.menu-open {
-        margin-right: 70%;
-    }
-
-    .field.menu-open {
-        margin-right: 70%;
+    .control-group input {
+        width: 50%;
     }
 }

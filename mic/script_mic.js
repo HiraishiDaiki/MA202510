@@ -3,13 +3,23 @@
 // ==========================================
 let audioContext;
 let analyserL, analyserR; // リサージュ用（フィルタ後）
-let analyserSpectrum;     // スペクトル用（フィルタ前・生音）
+let analyserSpectrumL,analyserSpectrumR;     // スペクトル用（フィルタ前・生音）
+
+const ampHistoryPower = []; // 二乗和の履歴
+
+let startTime = 0;
+const resetTime = 5;
+
+let currentSweap = [];
+let previousSweep = [];
 
 let filterL, filterR;
 let dataArrayL, dataArrayR;
+let delayNodeL, delayNodeR;
+
 // スペクトル表示用の変数
-let freqDataArray; 
-let freqBufferLength;
+let freqDataArrayL,freqDataArrayR; 
+let freqBufferLengthL,freqBufferLengthR;
 
 let animationId;
 let isRunning = false;
@@ -28,11 +38,17 @@ const MAX_DISPLAY_FREQ = 1000;
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-const freqCanvas = document.getElementById('frequencyCanvas');
-const freqCtx = freqCanvas.getContext('2d');
+const freqCanvasL = document.getElementById('frequencyCanvasL');
+const freqCtxL = freqCanvasL.getContext('2d');
 // Canvas解像度設定
-freqCanvas.width = 600;
-freqCanvas.height = 200;
+freqCanvasL.width = 600;
+freqCanvasL.height = 200;
+
+const freqCanvasR = document.getElementById('frequencyCanvasR');
+const freqCtxR = freqCanvasR.getContext('2d');
+// Canvas解像度設定
+freqCanvasR.width = 600;
+freqCanvasR.height = 200;
 
 const startBtn = document.getElementById('startBtn');
 const statusDiv = document.getElementById('status');
@@ -41,6 +57,12 @@ const audioSelect = document.getElementById('audioSource');
 const freqInput = document.getElementById('freqInput');
 const bwInput = document.getElementById('bwInput');
 const gainInput = document.getElementById('gainInput');
+
+const ampCanvas = document.getElementById('ampCanvas');
+const ampCtx = ampCanvas ? ampCanvas.getContext('2d') : null;
+
+const delayInput = document.getElementById('delayInput');
+const delayValueDisplay = document.getElementById('delayValue');
 
 // ==========================================
 // 0. デバイス一覧の取得
@@ -76,8 +98,10 @@ async function setupAudio() {
         // 画面クリア
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        freqCtx.fillStyle = '#ffffff';
-        freqCtx.fillRect(0, 0, freqCanvas.width, freqCanvas.height);
+        freqCtxL.fillStyle = '#ffffff';
+        freqCtxL.fillRect(0, 0, freqCanvasL.width, freqCanvasL.height);
+        freqCtxR.fillStyle = '#ffffff';
+        freqCtxR.fillRect(0, 0, freqCanvasR.width, freqCanvasR.height);
 
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -99,6 +123,11 @@ async function setupAudio() {
         filterL = createBandpassFilter();
         filterR = createBandpassFilter();
 
+        // --- 遅延ノードの作成 ---
+        delayNodeL = audioContext.createDelay(1.0);
+        delayNodeR = audioContext.createDelay(1.0);
+        
+
         // --- アナライザ作成 ---
         // 1. リサージュ用 (フィルタ後の音を見る)
         analyserL = audioContext.createAnalyser();
@@ -109,19 +138,27 @@ async function setupAudio() {
         analyserR.smoothingTimeConstant = 0;
 
         // 2. スペクトル用 (フィルタ前の「生音」)
-        analyserSpectrum = audioContext.createAnalyser();
-        analyserSpectrum.fftSize = 4096 * 4;
-        analyserSpectrum.smoothingTimeConstant = 0.0;
+        analyserSpectrumL = audioContext.createAnalyser();
+        analyserSpectrumL.fftSize = 4096 * 4;
+        analyserSpectrumL.smoothingTimeConstant = 0.0;
+
+        analyserSpectrumR = audioContext.createAnalyser();
+        analyserSpectrumR.fftSize = 4096 * 4;
+        analyserSpectrumR.smoothingTimeConstant = 0.0;
 
         // --- 接続ルーティング ---
         
         // A. スペクトル用: Splitter(生の音) -> AnalyserSpectrum
         // マイク1(ch0)の生音を接続
-        splitter.connect(analyserSpectrum, 0);
+        splitter.connect(analyserSpectrumL, 0);
+        splitter.connect(analyserSpectrumR, 1);
 
         // B. リサージュ用: Splitter -> Filter -> AnalyserL/R
-        splitter.connect(filterL, 0); 
-        splitter.connect(filterR, 1); 
+        splitter.connect(delayNodeL,0);
+        splitter.connect(delayNodeR,1);
+
+        delayNodeL.connect(filterL); 
+        delayNodeR.connect(filterR); 
 
         filterL.connect(analyserL);
         filterR.connect(analyserR);
@@ -133,13 +170,21 @@ async function setupAudio() {
         dataArrayR = new Float32Array(bufferLength);
 
         // スペクトル用
-        freqBufferLength = analyserSpectrum.frequencyBinCount;
-        freqDataArray = new Uint8Array(freqBufferLength);
+        freqBufferLengthL = analyserSpectrumL.frequencyBinCount;
+        freqDataArrayL = new Uint8Array(freqBufferLengthL);
+
+        freqBufferLengthR = analyserSpectrumL.frequencyBinCount;
+        freqDataArrayR = new Uint8Array(freqBufferLengthR);
 
         updateFilters();
         statusDiv.textContent = "モニタリング中... ";
         startBtn.textContent = "停止";
         isRunning = true;
+
+        // スタート時に減衰曲線のリセットを行う。
+        startTime = Date.now();
+        currentSweap = [];
+        previousSweep = [];
         
         draw(); 
 
@@ -169,6 +214,32 @@ function updateFilters() {
     filterR.Q.setTargetAtTime(qValue, currentTime, 0.01);
 }
 
+// 遅延ノードの時間を更新する関数
+// --- 遅延ノードの時間を更新する関数 ---
+function updateDelay() {
+    // 1. まず、スライダーの値を取得して画面の表示（数値）だけを更新する
+    const offsetMs = Number(delayInput.value);
+    if (delayValueDisplay) {
+        delayValueDisplay.textContent = offsetMs.toFixed(1);
+    }
+
+    // 2. もしマイクがスタートしていない（audioContext等が無い）場合は、ここで処理を止める
+    if (!audioContext || !delayNodeL || !delayNodeR) {
+        return; 
+    }
+
+    // 3. マイク動作中であれば、遅延を適用する
+    const currentTime = audioContext.currentTime;
+
+    // offsetがプラスならLを遅延、マイナスならRを遅延させる
+    if (offsetMs > 0) {
+        delayNodeL.delayTime.setTargetAtTime(offsetMs / 1000.0, currentTime, 0.01);
+        delayNodeR.delayTime.setTargetAtTime(0, currentTime, 0.01);
+    } else {
+        delayNodeL.delayTime.setTargetAtTime(0, currentTime, 0.01);
+        delayNodeR.delayTime.setTargetAtTime(Math.abs(offsetMs) / 1000.0, currentTime, 0.01);
+    }
+}
 // ==========================================
 // 2. 描画ループ
 // ==========================================
@@ -206,35 +277,125 @@ function draw() {
 
 
     // --- 2. スペクトル（周波数分析）の描画 (フィルタ前の生音) ---
-    const fw = freqCanvas.width;
-    const fh = freqCanvas.height;
+    const fw = freqCanvasL.width;
+    const fh = freqCanvasL.height;
 
-    freqCtx.fillStyle = '#f0f0f0';
-    freqCtx.fillRect(0, 0, fw, fh);
+    freqCtxL.fillStyle = '#f0f0f0';
+    freqCtxL.fillRect(0, 0, fw, fh);
+
+    freqCtxR.fillStyle = '#f0f0f0';
+    freqCtxR.fillRect(0, 0, fw, fh);
 
     // 生音用のアナライザからデータを取得
-    analyserSpectrum.getByteFrequencyData(freqDataArray);
+    analyserSpectrumL.getByteFrequencyData(freqDataArrayL);
+    analyserSpectrumR.getByteFrequencyData(freqDataArrayR);
 
     const nyquist = audioContext.sampleRate / 2;
-    const maxIndex = Math.floor((MAX_DISPLAY_FREQ / nyquist) * freqBufferLength);
+    const maxIndex = Math.floor((MAX_DISPLAY_FREQ / nyquist) * freqBufferLengthL);
     const barWidth = fw / maxIndex;
 
     let x = 0;
 
     for(let i = 0; i < maxIndex; i++) {
-        const barHeight = freqDataArray[i]; 
+        const barHeightL = freqDataArrayL[i]; 
+        const barHeightR = freqDataArrayR[i]; 
 
-        const percent = barHeight / 255;
-        const h = percent * fh;
+        const percentL = barHeightL / 255;
+        const hL = percentL * fh;
 
-        freqCtx.fillStyle = `#000000`;
-        freqCtx.fillRect(x, fh - h, barWidth + 1, h);
+        const percentR = barHeightR / 255;
+        const hR = percentR * fh;
+
+        freqCtxL.fillStyle = `#000000`;
+        freqCtxL.fillRect(x, fh - hL, barWidth + 1, hL);
+        
+        freqCtxR.fillStyle = `#000000`;
+        freqCtxR.fillRect(x, fh - hR, barWidth + 1, hR);
 
         x += barWidth;
     }
     
     // ガイドライン（これはフィルタの中心周波数を示す）
     drawFreqGuide(targetFreq);
+
+    // ==========================================
+    // --- 3. 振幅（二乗和：トータルパワー）の推移を描画 ---
+    // ==========================================
+    if (ampCtx) {
+        const aw = ampCanvas.width;
+        const ah = ampCanvas.height;
+
+        // 背景クリア
+        ampCtx.fillStyle = '#f0f0f0';
+        ampCtx.fillRect(0,0,aw,ah);
+
+        // --- 1.FFTデータから targetFreq の高さを取得する
+        const nyquist = audioContext.sampleRate / 2;
+        // targetFreq に対応する配列のインデックスを取得する
+        const targetIndex = Math.floor((targetFreq / nyquist) * freqBufferLengthL);
+
+        // 左右のグラフの高さを取得し0-1の間に正規化
+        const valL = freqDataArrayL[targetIndex] / 255.0;
+        const valR = freqDataArrayR[targetIndex] / 255.0;
+
+       // --- 2. 二乗和（トータルパワー）の計算 ---
+        // 10のべき乗(Math.pow)を使って、dBを一度「純粋なエネルギー(振幅の二乗)」に戻す
+        const energyL = Math.pow(10, valL * 5); 
+        const energyR = Math.pow(10, valR * 5);
+
+        // 二つのマイクのエネルギーの和（二乗和）をとる
+        const totalEnergy = energyL + energyR;
+
+        // --- 3. 再び対数(dB)に戻して減衰直線にする ---
+        // 2つのマイクの最大値が1.0に収まるように割ってからlogをとる
+        let power = Math.log10(totalEnergy / 2) / 5;
+
+        // ゲインをかけて、画面の表示(1.0)を突き抜けないように制限する
+        //power = Math.min(power * visualGain, 1.0);
+
+        // Y座標を計算
+        const yPos = ah - (power * ah);
+
+        // --- 3. X座標の計算 ---
+        let elapsedTime = (Date.now() - startTime) / 1000;
+        let xPos = (elapsedTime % resetTime ) / resetTime *aw;
+
+        // 右端に到達したときの処理
+        if(currentSweap.length > 0 && xPos < currentSweap[currentSweap.length - 1][0]){
+            // 現在の線を過去の線にコピーしてリセット
+            previousSweep = [...currentSweap];
+            currentSweap = [];
+            startTime = Date.now();
+            xPos = 0;
+        }
+
+        // 現在の座標を配列に保存
+        currentSweap.push([xPos,yPos]);
+
+        // --- 4. 過去の軌跡の描画 ---
+        if (previousSweep.length > 0) {
+            ampCtx.beginPath();
+            ampCtx.moveTo(previousSweep[0][0], previousSweep[0][1]);
+            for (let i = 1; i < previousSweep.length; i++) {
+                ampCtx.lineTo(previousSweep[i][0], previousSweep[i][1]);
+            }
+            ampCtx.strokeStyle = "rgba(51, 51, 51, 0.4)"; // 半透明のグレー
+            ampCtx.lineWidth = 1;
+            ampCtx.stroke();
+        }
+
+        // --- 5. 現在の軌跡の描画 ---
+        if (currentSweap.length > 0){
+            ampCtx.beginPath();
+            ampCtx.moveTo(currentSweap[0][0],currentSweap[0][1]);
+            for (let i = 1; i < currentSweap.length; i++){
+                ampCtx.lineTo(currentSweap[i][0], currentSweap[i][1]);
+            }
+            ampCtx.strokeStyle = "black";
+            ampCtx.lineWidth = 2;
+            ampCtx.stroke();
+        }
+    }
 }
 
 // ガイドライン表示関数
@@ -242,23 +403,36 @@ function drawFreqGuide(freq) {
     if(!audioContext) return;
     if (freq > MAX_DISPLAY_FREQ) return;
 
-    const fw = freqCanvas.width;
-    const fh = freqCanvas.height;
+    const fw = freqCanvasL.width;
+    const fh = freqCanvasL.height;
     const xPos = (freq / MAX_DISPLAY_FREQ) * fw;
 
     if (xPos < fw) {
-        freqCtx.beginPath();
-        freqCtx.moveTo(xPos, 0);
-        freqCtx.lineTo(xPos, fh);
-        freqCtx.strokeStyle = 'red';
-        freqCtx.lineWidth = 2;
-        freqCtx.setLineDash([5, 5]); 
-        freqCtx.stroke();
-        freqCtx.setLineDash([]); 
+        freqCtxL.beginPath();
+        freqCtxL.moveTo(xPos, 0);
+        freqCtxL.lineTo(xPos, fh);
+        freqCtxL.strokeStyle = 'red';
+        freqCtxL.lineWidth = 2;
+        freqCtxL.setLineDash([5, 5]); 
+        freqCtxL.stroke();
+        freqCtxL.setLineDash([]); 
 
-        freqCtx.fillStyle = 'red';
-        freqCtx.font = '12px Arial';
-        freqCtx.fillText(`${freq}Hz`, xPos + 5, 15);
+        freqCtxL.fillStyle = 'red';
+        freqCtxL.font = '12px Arial';
+        freqCtxL.fillText(`${freq}Hz`, xPos + 5, 15);
+
+        freqCtxR.beginPath();
+        freqCtxR.moveTo(xPos, 0);
+        freqCtxR.lineTo(xPos, fh);
+        freqCtxR.strokeStyle = 'red';
+        freqCtxR.lineWidth = 2;
+        freqCtxR.setLineDash([5, 5]); 
+        freqCtxR.stroke();
+        freqCtxR.setLineDash([]); 
+
+        freqCtxR.fillStyle = 'red';
+        freqCtxR.font = '12px Arial';
+        freqCtxR.fillText(`${freq}Hz`, xPos + 5, 15);
     }
 }
 
@@ -288,6 +462,10 @@ bwInput.addEventListener('input', (e) => {
 gainInput.addEventListener('input', (e) => {
     visualGain = Number(e.target.value);
 });
+
+if (delayInput){
+    delayInput.addEventListener('input',updateDelay);
+}
 
 // 画像保存
 document.querySelectorAll('.saveBtn').forEach(button => {
